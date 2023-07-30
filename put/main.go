@@ -93,7 +93,14 @@ func cards(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		reqCard.ID = len(cardsStorage) + 1
+		lastID := 0
+		for _, c := range cardsStorage {
+			if c.ID > lastID {
+				lastID = c.ID
+			}
+		}
+
+		reqCard.ID = lastID + 1
 		cardsStorage = append(cardsStorage, reqCard)
 	default:
 		w.Write([]byte("Метод не підтримується!"))
