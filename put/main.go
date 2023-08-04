@@ -23,6 +23,7 @@ type creditCard struct {
 func main() {
 	http.HandleFunc("/cards", cards)
 	http.HandleFunc("/cards/", card)
+
 	server := &http.Server{
 		Addr: ":8080",
 	}
@@ -56,8 +57,8 @@ func card(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			return
 		}
-
 		reqCard.ID = id
+
 		for i := range cardsStorage {
 			if cardsStorage[i].ID == id {
 				cardsStorage[i] = reqCard
@@ -66,7 +67,6 @@ func card(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.Write([]byte("Метод не підтримується!"))
 	}
-
 }
 
 func cards(w http.ResponseWriter, r *http.Request) {
@@ -94,9 +94,9 @@ func cards(w http.ResponseWriter, r *http.Request) {
 		}
 
 		lastID := 0
-		for _, c := range cardsStorage {
-			if c.ID > lastID {
-				lastID = c.ID
+		for _, card := range cardsStorage {
+			if card.ID > lastID {
+				lastID = card.ID
 			}
 		}
 
