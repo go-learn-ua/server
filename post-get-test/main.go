@@ -19,6 +19,7 @@ type creditCard struct {
 
 func main() {
 	http.HandleFunc("/cards", cards)
+
 	server := &http.Server{
 		Addr: ":8080",
 	}

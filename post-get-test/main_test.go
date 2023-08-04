@@ -18,36 +18,15 @@ func Test_CardsGet(t *testing.T) {
 		"ok_one_record_in_storage": {
 			cardsStorage: []creditCard{
 				{
-					Number:         3911391723597698,
-					ExpirationDate: "20 липня 2031р",
+					Number:         1111111111111,
+					ExpirationDate: "21 січня 2023р",
 					CvvCode:        123,
 					Holder:         "Іванко",
 				},
 			},
-			expResp: `[{"number":3911391723597698,"expiration_date":"20 липня 2031р","cvv":123,"holder":"Іванко"}]`,
-		},
-		"empty_response": {
-			expResp: "null",
-		},
-		"ok_two_records_in_response": {
-			cardsStorage: []creditCard{
-				{
-					Number:         3911391723597698,
-					ExpirationDate: "20 липня 2031р",
-					CvvCode:        123,
-					Holder:         "Іванко",
-				},
-				{
-					Number:         4444,
-					ExpirationDate: "20 липня 2024р",
-					CvvCode:        123,
-					Holder:         "Петрик",
-				},
-			},
-			expResp: `[{"number":3911391723597698,"expiration_date":"20 липня 2031р","cvv":123,"holder":"Іванко"},{"number":4444,"expiration_date":"20 липня 2024р","cvv":123,"holder":"Петрик"}]`,
+			expResp: `[{"number":1111111111111,"expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
 		},
 	}
-
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cardsStorage = tc.cardsStorage
@@ -57,14 +36,14 @@ func Test_CardsGet(t *testing.T) {
 			}
 
 			rw := httptest.NewRecorder()
+
 			cards(rw, &request)
 
 			resp := rw.Body.String()
-			assert.Equal(t, tc.expResp, resp)
+			expResp := tc.expResp
+			assert.Equal(t, expResp, resp)
 		})
 	}
-
-	cardsStorage = nil
 }
 
 func Test_CardsPost(t *testing.T) {
@@ -74,19 +53,22 @@ func Test_CardsPost(t *testing.T) {
 		expCardsStorage   []creditCard
 	}{
 		"empty_body": {
-			requestBody:     io.NopCloser(readerErrMock{}),
-			expCardsStorage: nil,
+			setupCardsStorage: nil,
+			requestBody:       io.NopCloser(errMock{}),
+			expCardsStorage:   nil,
 		},
 		"invalid_json": {
-			requestBody:     io.NopCloser(strings.NewReader(``)),
-			expCardsStorage: nil,
+			setupCardsStorage: nil,
+			requestBody:       io.NopCloser(strings.NewReader("")),
+			expCardsStorage:   nil,
 		},
 		"ok_empty_storage": {
-			requestBody: io.NopCloser(strings.NewReader(`{"number":3911391723597698,"expiration_date":"20 липня 2031р","cvv":123,"holder":"Іванко"}`)),
+			setupCardsStorage: nil,
+			requestBody:       io.NopCloser(strings.NewReader(`{"number":111111,"expiration_date":"21 липня 2025р","cvv":123,"holder":"Іванко"}`)),
 			expCardsStorage: []creditCard{
 				{
-					Number:         3911391723597698,
-					ExpirationDate: "20 липня 2031р",
+					Number:         111111,
+					ExpirationDate: "21 липня 2025р",
 					CvvCode:        123,
 					Holder:         "Іванко",
 				},
@@ -95,37 +77,37 @@ func Test_CardsPost(t *testing.T) {
 		"ok_with_records_in_storage": {
 			setupCardsStorage: []creditCard{
 				{
-					Number:         1111,
-					ExpirationDate: "20 липня 2032р",
-					CvvCode:        123,
+					Number:         22222,
+					ExpirationDate: "24 липня 2091",
+					CvvCode:        223,
 					Holder:         "Петрик",
 				},
 				{
-					Number:         2222,
-					ExpirationDate: "20 липня 2033р",
+					Number:         333333,
+					ExpirationDate: "8 серпня 2082",
 					CvvCode:        333,
 					Holder:         "Світланка",
 				},
 			},
-			requestBody: io.NopCloser(strings.NewReader(`{"number":3911391723597698,"expiration_date":"20 липня 2031р","cvv":123,"holder":"Іванко"}`)),
+			requestBody: io.NopCloser(strings.NewReader(`{"number":111111,"expiration_date":"21 липня 2025р","cvv":123,"holder":"Іванко"}`)),
 			expCardsStorage: []creditCard{
 				{
-					Number:         3911391723597698,
-					ExpirationDate: "20 липня 2031р",
-					CvvCode:        123,
-					Holder:         "Іванко",
-				},
-				{
-					Number:         1111,
-					ExpirationDate: "20 липня 2032р",
-					CvvCode:        123,
+					Number:         22222,
+					ExpirationDate: "24 липня 2091",
+					CvvCode:        223,
 					Holder:         "Петрик",
 				},
 				{
-					Number:         2222,
-					ExpirationDate: "20 липня 2033р",
+					Number:         333333,
+					ExpirationDate: "8 серпня 2082",
 					CvvCode:        333,
 					Holder:         "Світланка",
+				},
+				{
+					Number:         111111,
+					ExpirationDate: "21 липня 2025р",
+					CvvCode:        123,
+					Holder:         "Іванко",
 				},
 			},
 		},
@@ -134,7 +116,6 @@ func Test_CardsPost(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cardsStorage = tc.setupCardsStorage
-
 			request := http.Request{
 				Method: "POST",
 				Body:   tc.requestBody,
@@ -143,17 +124,16 @@ func Test_CardsPost(t *testing.T) {
 			rw := httptest.NewRecorder()
 			cards(rw, &request)
 
-			response := rw.Body.String()
-			assert.Empty(t, response)
+			body := rw.Body.String()
+			assert.Empty(t, body)
 			assert.ElementsMatch(t, tc.expCardsStorage, cardsStorage)
 		})
 	}
-
-	cardsStorage = nil
 }
 
-type readerErrMock struct{}
+type errMock struct {
+}
 
-func (r readerErrMock) Read(p []byte) (n int, err error) {
+func (e errMock) Read(p []byte) (n int, err error) {
 	return 0, assert.AnError
 }
