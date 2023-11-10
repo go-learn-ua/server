@@ -13,9 +13,10 @@ import (
 
 func Test_CardsGet(t *testing.T) {
 	testCases := map[string]struct {
-		cardsStorage []creditCard
-		queryParams  string
-		expResp      string
+		cardsStorage  []creditCard
+		expResp       string
+		expStatusCode int
+		queryParams   string
 	}{
 		"ok_one_record_in_storage": {
 			cardsStorage: []creditCard{
@@ -27,7 +28,8 @@ func Test_CardsGet(t *testing.T) {
 					Holder:         "Іванко",
 				},
 			},
-			expResp: `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
+			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
+			expStatusCode: http.StatusOK,
 		},
 		"equal_filter_by_holder": {
 			queryParams: "holder=Іванко",
@@ -102,7 +104,7 @@ func Test_CardsGet(t *testing.T) {
 			cardsStorage = tc.cardsStorage
 
 			request := http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{RawQuery: tc.queryParams},
 			}
 
@@ -126,50 +128,50 @@ func Test_CardsPost(t *testing.T) {
 		expStatusCode     int
 	}{
 		"empty_body": {
+			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(errMock{}),
 			expCardsStorage:   nil,
 			expBody:           "",
-			expStatusCode:     http.StatusBadRequest,
 		},
 		"invalid_json": {
+			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader("")),
 			expCardsStorage:   nil,
-			expStatusCode:     http.StatusBadRequest,
 		},
 		"invalid_card_number": {
+			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"42","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
 			expCardsStorage:   nil,
 			expBody:           "number: must be a valid credit card number.",
-			expStatusCode:     http.StatusBadRequest,
 		},
 		"invalid_card_expiration_date": {
+			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"122/43","cvv":123,"holder":"Іванко"}`)),
 			expCardsStorage:   nil,
 			expBody:           "expiration_date: дата не коректна.",
-			expStatusCode:     http.StatusBadRequest,
 		},
 		"invalid_card_svv": {
+			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":12223,"holder":"Іванко"}`)),
 			expCardsStorage:   nil,
 			expBody:           "cvv: must be no greater than 999.",
-			expStatusCode:     http.StatusBadRequest,
 		},
 		"invalid_card_holder": {
+			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"І"}`)),
 			expCardsStorage:   nil,
 			expBody:           "holder: the length must be between 5 and 50.",
-			expStatusCode:     http.StatusBadRequest,
 		},
 		"ok_empty_storage": {
+			expStatusCode:     http.StatusCreated,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
-			expStatusCode:     http.StatusCreated,
 			expCardsStorage: []creditCard{
 				{
 					ID:             1,
@@ -229,7 +231,7 @@ func Test_CardsPost(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cardsStorage = tc.setupCardsStorage
 			request := http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				Body:   tc.requestBody,
 			}
 
@@ -388,7 +390,7 @@ func Test_CardPut(t *testing.T) {
 			cardsStorage = tc.setupCardsStorage
 
 			request := http.Request{
-				Method: "PUT",
+				Method: http.MethodPut,
 				Body:   tc.requestBody,
 				URL:    &url.URL{Path: tc.path},
 			}
@@ -411,12 +413,12 @@ func Test_CardDelete(t *testing.T) {
 		expStatusCode     int
 	}{
 		"id_is_not_provided": {
-			path:          "/cards/",
 			expStatusCode: http.StatusNotFound,
+			path:          "/cards/",
 		},
 		"invalid_path_param": {
-			path:          "/cards/oleh",
 			expStatusCode: http.StatusNotFound,
+			path:          "/cards/oleh",
 		},
 		"record_not_found": {
 			expStatusCode: http.StatusNoContent,
@@ -518,15 +520,15 @@ func Test_CardDelete(t *testing.T) {
 			cardsStorage = tc.setupCardsStorage
 
 			request := http.Request{
-				Method: "DELETE",
+				Method: http.MethodDelete,
 				URL:    &url.URL{Path: tc.path},
 			}
 
 			rw := httptest.NewRecorder()
 			card(rw, &request)
 
-			assert.Equal(t, tc.expStatusCode, rw.Code)
 			assert.Empty(t, rw.Body.String())
+			assert.Equal(t, tc.expStatusCode, rw.Code)
 			assert.ElementsMatch(t, tc.expCardsStorage, cardsStorage)
 		})
 	}

@@ -52,7 +52,6 @@ func card(w http.ResponseWriter, r *http.Request) {
 		for i := range cardsStorage {
 			if cardsStorage[i].ID == id {
 				cardsStorage = append(cardsStorage[:i], cardsStorage[i+1:]...)
-				w.WriteHeader(http.StatusNoContent)
 				break
 			}
 		}
@@ -101,7 +100,7 @@ func card(w http.ResponseWriter, r *http.Request) {
 
 func cards(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		creditCards := make([]creditCard, 0)
 		holder := r.URL.Query().Get("holder")
 		if holder != "" {
@@ -117,13 +116,17 @@ func cards(w http.ResponseWriter, r *http.Request) {
 		resp, err := json.Marshal(creditCards)
 		if err != nil {
 			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		w.WriteHeader(http.StatusOK)
 		w.Write(resp)
-	case "POST":
+	case http.MethodPost:
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		r.Body.Close()
@@ -132,11 +135,13 @@ func cards(w http.ResponseWriter, r *http.Request) {
 		err = json.Unmarshal(body, &reqCard)
 		if err != nil {
 			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		err = validate(reqCard)
 		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			return
 		}
@@ -150,7 +155,9 @@ func cards(w http.ResponseWriter, r *http.Request) {
 
 		reqCard.ID = lastID + 1
 		cardsStorage = append(cardsStorage, reqCard)
+		w.WriteHeader(http.StatusCreated)
 	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Метод не підтримується!"))
 	}
 }
