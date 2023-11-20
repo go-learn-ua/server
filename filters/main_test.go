@@ -31,7 +31,7 @@ func Test_CardsGet(t *testing.T) {
 			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
 			expStatusCode: http.StatusOK,
 		},
-		"equal_filter_by_holder": {
+		"equal filter by holder": {
 			queryParams: "holder=Іванко",
 			cardsStorage: []creditCard{
 				{
@@ -49,9 +49,10 @@ func Test_CardsGet(t *testing.T) {
 					Holder:         "Петрик",
 				},
 			},
-			expResp: `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
+			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
+			expStatusCode: http.StatusOK,
 		},
-		"case_insensitive_filter_by_holder": {
+		"case insensitive filter by holder": {
 			queryParams: "holder=івАнко",
 			cardsStorage: []creditCard{
 				{
@@ -69,9 +70,10 @@ func Test_CardsGet(t *testing.T) {
 					Holder:         "Петрик",
 				},
 			},
-			expResp: `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
+			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
+			expStatusCode: http.StatusOK,
 		},
-		"contains_filter_by_holder": {
+		"contains filter by holder": {
 			queryParams: "holder=чорно",
 			cardsStorage: []creditCard{
 				{
@@ -96,7 +98,8 @@ func Test_CardsGet(t *testing.T) {
 					Holder:         "Не Я",
 				},
 			},
-			expResp: `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко Чорногузко"},{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Петрик Чорновуско"}]`,
+			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко Чорногузко"},{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Петрик Чорновуско"}]`,
+			expStatusCode: http.StatusOK,
 		},
 	}
 	for name, tc := range testCases {
