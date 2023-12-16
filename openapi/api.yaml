@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+  title: Гаманець
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080
+paths:
+  /cards:
+    get:
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Card"
+        '500':
+          description: Internal Server Error
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Card'
+      responses:
+        '201':
+          description: Accepted
+  /cards/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      responses:
+        '204':
+          description: Accepted
+    put:
+      responses:
+        '200':
+          description: Ok
+
+components:
+  schemas:
+    Card:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        number:
+          type: string
+        expiration_date:
+          type: string
+        cvv:
+          type: integer
+          example: 222
+        holder:
+          type: string
