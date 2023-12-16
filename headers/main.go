@@ -39,6 +39,11 @@ func main() {
 }
 
 func card(w http.ResponseWriter, r *http.Request) {
+	if isCountryAllowed(r.Header) == false {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	path := strings.Split(r.URL.Path, "/")
 	id, err := strconv.Atoi(path[2])
 	if err != nil {
@@ -99,6 +104,11 @@ func card(w http.ResponseWriter, r *http.Request) {
 }
 
 func cards(w http.ResponseWriter, r *http.Request) {
+	if isCountryAllowed(r.Header) == false {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		creditCards := make([]creditCard, 0)
@@ -171,4 +181,19 @@ func validate(card creditCard) error {
 			Match(regexp.MustCompile("^(0[1-9]|1[0-2])\\/[0-9]{2}$")).
 			Error("дата не коректна")),
 	)
+}
+
+const xCountryCodeHeaderKey = "X-Country-Code"
+const uaCountryCode = "UA"
+const usCountryCode = "US"
+const ukCountryCode = "UK"
+
+func isCountryAllowed(header http.Header) bool {
+	code := header.Get(xCountryCodeHeaderKey)
+
+	switch code {
+	case uaCountryCode, usCountryCode, ukCountryCode:
+		return true
+	}
+	return false
 }

@@ -14,11 +14,17 @@ import (
 func Test_CardsGet(t *testing.T) {
 	testCases := map[string]struct {
 		cardsStorage  []creditCard
+		countryCode   string
 		expResp       string
 		expStatusCode int
 		queryParams   string
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"ok_one_record_in_storage": {
+			countryCode: usCountryCode,
 			cardsStorage: []creditCard{
 				{
 					ID:             2983,
@@ -32,6 +38,7 @@ func Test_CardsGet(t *testing.T) {
 			expStatusCode: http.StatusOK,
 		},
 		"equal filter by holder": {
+			countryCode: usCountryCode,
 			queryParams: "holder=Іванко",
 			cardsStorage: []creditCard{
 				{
@@ -53,6 +60,7 @@ func Test_CardsGet(t *testing.T) {
 			expStatusCode: http.StatusOK,
 		},
 		"case insensitive filter by holder": {
+			countryCode: usCountryCode,
 			queryParams: "holder=івАнко",
 			cardsStorage: []creditCard{
 				{
@@ -74,6 +82,7 @@ func Test_CardsGet(t *testing.T) {
 			expStatusCode: http.StatusOK,
 		},
 		"contains filter by holder": {
+			countryCode: usCountryCode,
 			queryParams: "holder=чорно",
 			cardsStorage: []creditCard{
 				{
@@ -109,6 +118,7 @@ func Test_CardsGet(t *testing.T) {
 			request := http.Request{
 				Method: http.MethodGet,
 				URL:    &url.URL{RawQuery: tc.queryParams},
+				Header: http.Header{xCountryCodeHeaderKey: []string{tc.countryCode}},
 			}
 
 			rw := httptest.NewRecorder()
@@ -126,11 +136,17 @@ func Test_CardsPost(t *testing.T) {
 	testCases := map[string]struct {
 		setupCardsStorage []creditCard
 		requestBody       io.ReadCloser
+		countryCode       string
 		expCardsStorage   []creditCard
 		expBody           string
 		expStatusCode     int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"empty_body": {
+			countryCode:       ukCountryCode,
 			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(errMock{}),
@@ -138,12 +154,14 @@ func Test_CardsPost(t *testing.T) {
 			expBody:           "",
 		},
 		"invalid_json": {
+			countryCode:       usCountryCode,
 			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader("")),
 			expCardsStorage:   nil,
 		},
 		"invalid_card_number": {
+			countryCode:       ukCountryCode,
 			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"42","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
@@ -151,6 +169,7 @@ func Test_CardsPost(t *testing.T) {
 			expBody:           "number: must be a valid credit card number.",
 		},
 		"invalid_card_expiration_date": {
+			countryCode:       uaCountryCode,
 			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"122/43","cvv":123,"holder":"Іванко"}`)),
@@ -158,6 +177,7 @@ func Test_CardsPost(t *testing.T) {
 			expBody:           "expiration_date: дата не коректна.",
 		},
 		"invalid_card_svv": {
+			countryCode:       uaCountryCode,
 			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":12223,"holder":"Іванко"}`)),
@@ -165,6 +185,7 @@ func Test_CardsPost(t *testing.T) {
 			expBody:           "cvv: must be no greater than 999.",
 		},
 		"invalid_card_holder": {
+			countryCode:       uaCountryCode,
 			expStatusCode:     http.StatusBadRequest,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"І"}`)),
@@ -172,6 +193,7 @@ func Test_CardsPost(t *testing.T) {
 			expBody:           "holder: the length must be between 5 and 50.",
 		},
 		"ok_empty_storage": {
+			countryCode:       uaCountryCode,
 			expStatusCode:     http.StatusCreated,
 			setupCardsStorage: nil,
 			requestBody:       io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
@@ -186,6 +208,7 @@ func Test_CardsPost(t *testing.T) {
 			},
 		},
 		"ok_with_records_in_storage": {
+			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusCreated,
 			setupCardsStorage: []creditCard{
 				{
@@ -236,6 +259,7 @@ func Test_CardsPost(t *testing.T) {
 			request := http.Request{
 				Method: http.MethodPost,
 				Body:   tc.requestBody,
+				Header: http.Header{xCountryCodeHeaderKey: []string{tc.countryCode}},
 			}
 
 			rw := httptest.NewRecorder()
@@ -253,40 +277,58 @@ func Test_CardPut(t *testing.T) {
 	testCases := map[string]struct {
 		setupCardsStorage []creditCard
 		path              string
+		countryCode       string
 		requestBody       io.ReadCloser
 		expCardsStorage   []creditCard
 		expBody           string
+		expStatusCode     int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"id_is_not_provided": {
 			setupCardsStorage: nil,
 			path:              "/cards/",
+			countryCode:       ukCountryCode,
 			requestBody:       nil,
 			expCardsStorage:   nil,
+			expStatusCode:     http.StatusNotFound,
 		},
 		"incorrect_id_type": {
 			setupCardsStorage: nil,
 			path:              "/cards/yura",
+			countryCode:       ukCountryCode,
 			requestBody:       nil,
 			expCardsStorage:   nil,
+			expStatusCode:     http.StatusBadRequest,
 		},
 		"validation_errors": {
-			path:        "/cards/2",
-			requestBody: io.NopCloser(strings.NewReader(`{"number":"9","expiration_date":"завтра","cvv":3,"holder":"А"}`)),
-			expBody:     "cvv: must be no less than 100; expiration_date: дата не коректна; holder: the length must be between 5 and 50; number: must be a valid credit card number.",
+			path:          "/cards/2",
+			countryCode:   ukCountryCode,
+			requestBody:   io.NopCloser(strings.NewReader(`{"number":"9","expiration_date":"завтра","cvv":3,"holder":"А"}`)),
+			expStatusCode: http.StatusBadRequest,
+			expBody:       "cvv: must be no less than 100; expiration_date: дата не коректна; holder: the length must be between 5 and 50; number: must be a valid credit card number.",
 		},
 		"empty_body": {
 			setupCardsStorage: nil,
+			countryCode:       ukCountryCode,
 			path:              "/cards/1",
 			requestBody:       io.NopCloser(errMock{}),
+			expStatusCode:     http.StatusBadRequest,
 			expCardsStorage:   nil,
 		},
 		"invalid_json": {
 			setupCardsStorage: nil,
+			countryCode:       ukCountryCode,
 			path:              "/cards/1",
 			requestBody:       io.NopCloser(strings.NewReader("")),
+			expStatusCode:     http.StatusBadRequest,
 			expCardsStorage:   nil,
 		},
 		"success": {
+			countryCode:   ukCountryCode,
+			expStatusCode: http.StatusOK,
 			setupCardsStorage: []creditCard{
 				{
 					ID:             1,
@@ -337,6 +379,8 @@ func Test_CardPut(t *testing.T) {
 			},
 		},
 		"record_not_found": {
+			countryCode:   ukCountryCode,
+			expStatusCode: http.StatusNotFound,
 			setupCardsStorage: []creditCard{
 				{
 					ID:             1,
@@ -396,6 +440,7 @@ func Test_CardPut(t *testing.T) {
 				Method: http.MethodPut,
 				Body:   tc.requestBody,
 				URL:    &url.URL{Path: tc.path},
+				Header: http.Header{xCountryCodeHeaderKey: []string{tc.countryCode}},
 			}
 
 			rw := httptest.NewRecorder()
@@ -412,18 +457,26 @@ func Test_CardDelete(t *testing.T) {
 	testCases := map[string]struct {
 		setupCardsStorage []creditCard
 		path              string
+		countryCode       string
 		expCardsStorage   []creditCard
 		expStatusCode     int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"id_is_not_provided": {
+			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusNotFound,
 			path:          "/cards/",
 		},
 		"invalid_path_param": {
+			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusNotFound,
 			path:          "/cards/oleh",
 		},
 		"record_not_found": {
+			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusNoContent,
 			setupCardsStorage: []creditCard{
 				{
@@ -474,6 +527,7 @@ func Test_CardDelete(t *testing.T) {
 			},
 		},
 		"success": {
+			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusNoContent,
 			setupCardsStorage: []creditCard{
 				{
@@ -525,6 +579,7 @@ func Test_CardDelete(t *testing.T) {
 			request := http.Request{
 				Method: http.MethodDelete,
 				URL:    &url.URL{Path: tc.path},
+				Header: http.Header{xCountryCodeHeaderKey: []string{tc.countryCode}},
 			}
 
 			rw := httptest.NewRecorder()
