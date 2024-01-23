@@ -29,7 +29,7 @@ func main() {
 	http.HandleFunc("/cards/", card)
 
 	server := &http.Server{
-		Addr: ":8087",
+		Addr: ":8080",
 	}
 
 	err := server.ListenAndServe()

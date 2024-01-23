@@ -6,6 +6,13 @@ servers:
   - url: http://localhost:8080
 paths:
   /cards:
+    parameters:
+      - name: X-Country-Code
+        in: header
+        example: UA
+        required: true
+        schema:
+          type: string
     get:
       responses:
         '200':
@@ -35,6 +42,12 @@ paths:
         required: true
         schema:
           type: integer
+      - name: X-Country-Code
+        in: header
+        example: UA
+        required: true
+        schema:
+          type: string
     delete:
       responses:
         '204':
@@ -42,22 +55,25 @@ paths:
     put:
       responses:
         '200':
-          description: Ok
-
+          description: Accepted
 components:
   schemas:
     Card:
       type: object
       properties:
         id:
-          type: integer
+          type:
+          example: 1
           readOnly: true
         number:
+          example: "4263982640269299"
           type: string
         expiration_date:
           type: string
+          example: "21 січня 2023р"
         cvv:
           type: integer
           example: 222
         holder:
           type: string
+          example: "Oleh"
