@@ -6,11 +6,11 @@ import (
 )
 
 func main() {
-	http.HandleFunc("GET /cards", listCards)
-	http.HandleFunc("POST /cards", createCard)
+	http.HandleFunc("GET /cards", listCards(storageListCards))
+	http.HandleFunc("POST /cards", createCard(storageSaveCard))
 
-	http.HandleFunc("DELETE /cards/{id}", deleteCard)
-	http.HandleFunc("PUT /cards/{id}", updateCard)
+	http.HandleFunc("DELETE /cards/{id}", deleteCard(storageDeleteCard))
+	http.HandleFunc("PUT /cards/{id}", updateCard(storageUpdateCard))
 
 	server := &http.Server{
 		Addr: ":8080",

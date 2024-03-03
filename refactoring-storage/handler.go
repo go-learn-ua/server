@@ -7,160 +7,146 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
-var cardsStorage []creditCard
+type storageSaveCardFunc = func(card creditCard)
 
-type creditCard struct {
-	ID             int    `json:"id"`
-	Number         string `json:"number"`
-	ExpirationDate string `json:"expiration_date"`
-	CvvCode        int    `json:"cvv"`
-	Holder         string `json:"holder"`
-}
-
-func createCard(w http.ResponseWriter, r *http.Request) {
-	if isCountryAllowed(r.Header) == false {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	r.Body.Close()
-
-	var reqCard creditCard
-	err = json.Unmarshal(body, &reqCard)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	err = validate(reqCard)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	lastID := 0
-	for _, card := range cardsStorage {
-		if card.ID > lastID {
-			lastID = card.ID
-		}
-	}
-
-	reqCard.ID = lastID + 1
-	cardsStorage = append(cardsStorage, reqCard)
-	w.WriteHeader(http.StatusCreated)
-}
-
-func listCards(w http.ResponseWriter, r *http.Request) {
-	if isCountryAllowed(r.Header) == false {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	creditCards := make([]creditCard, 0)
-	holder := r.URL.Query().Get("holder")
-	if holder != "" {
-		for _, card := range cardsStorage {
-			if strings.Contains(strings.ToLower(card.Holder), strings.ToLower(holder)) {
-				creditCards = append(creditCards, card)
-			}
-		}
-	} else {
-		creditCards = cardsStorage
-	}
-
-	resp, err := json.Marshal(creditCards)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
-}
-
-func updateCard(w http.ResponseWriter, r *http.Request) {
-	if isCountryAllowed(r.Header) == false {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	r.Body.Close()
-
-	var reqCard creditCard
-	err = json.Unmarshal(body, &reqCard)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	err = validate(reqCard)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	reqCard.ID = id
-
-	for i := range cardsStorage {
-		if cardsStorage[i].ID == id {
-			cardsStorage[i] = reqCard
-			w.WriteHeader(http.StatusOK)
+func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isCountryAllowed(r.Header) == false {
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-	}
 
-	w.WriteHeader(http.StatusNotFound)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		r.Body.Close()
+
+		var reqCard creditCard
+		err = json.Unmarshal(body, &reqCard)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = validate(reqCard)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		storageSaveCard(reqCard)
+		w.WriteHeader(http.StatusCreated)
+	}
 }
 
-func deleteCard(w http.ResponseWriter, r *http.Request) {
-	if isCountryAllowed(r.Header) == false {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
+type storageListCardsFunc = func(holder string) []creditCard
 
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	for i := range cardsStorage {
-		if cardsStorage[i].ID == id {
-			cardsStorage = append(cardsStorage[:i], cardsStorage[i+1:]...)
-			break
+func listCards(storageListCards storageListCardsFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isCountryAllowed(r.Header) == false {
+			w.WriteHeader(http.StatusForbidden)
+			return
 		}
-	}
 
-	w.WriteHeader(http.StatusNoContent)
+		holder := r.URL.Query().Get("holder")
+
+		creditCards := storageListCards(holder)
+		resp, err := json.Marshal(creditCards)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(resp)
+	}
+}
+
+type storageUpdateCardFunc = func(card creditCard) error
+
+func updateCard(storageUpdateCard storageUpdateCardFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("start")
+		if isCountryAllowed(r.Header) == false {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		r.Body.Close()
+
+		var reqCard creditCard
+		err = json.Unmarshal(body, &reqCard)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = validate(reqCard)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		reqCard.ID = id
+
+		err = storageUpdateCard(reqCard)
+		if err == errCreditCardNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+}
+
+type storageDeleteCardFunc func(id int)
+
+func deleteCard(storageDeleteCard storageDeleteCardFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isCountryAllowed(r.Header) == false {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		storageDeleteCard(id)
+		w.WriteHeader(http.StatusNoContent)
+	}
 }
 
 func validate(card creditCard) error {
