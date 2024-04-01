@@ -23,6 +23,35 @@ type creditCard struct {
 	Holder         string `json:"holder"`
 }
 
+func listCards(w http.ResponseWriter, r *http.Request) {
+	if isCountryAllowed(r.Header) == false {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	creditCards := make([]creditCard, 0)
+	holder := r.URL.Query().Get("holder")
+	if holder != "" {
+		for _, card := range cardsStorage {
+			if strings.Contains(strings.ToLower(card.Holder), strings.ToLower(holder)) {
+				creditCards = append(creditCards, card)
+			}
+		}
+	} else {
+		creditCards = cardsStorage
+	}
+
+	resp, err := json.Marshal(creditCards)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+}
+
 func createCard(w http.ResponseWriter, r *http.Request) {
 	if isCountryAllowed(r.Header) == false {
 		w.WriteHeader(http.StatusForbidden)
@@ -64,35 +93,6 @@ func createCard(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func listCards(w http.ResponseWriter, r *http.Request) {
-	if isCountryAllowed(r.Header) == false {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	creditCards := make([]creditCard, 0)
-	holder := r.URL.Query().Get("holder")
-	if holder != "" {
-		for _, card := range cardsStorage {
-			if strings.Contains(strings.ToLower(card.Holder), strings.ToLower(holder)) {
-				creditCards = append(creditCards, card)
-			}
-		}
-	} else {
-		creditCards = cardsStorage
-	}
-
-	resp, err := json.Marshal(creditCards)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
-}
-
 func updateCard(w http.ResponseWriter, r *http.Request) {
 	if isCountryAllowed(r.Header) == false {
 		w.WriteHeader(http.StatusForbidden)
@@ -101,7 +101,8 @@ func updateCard(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(err)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -149,6 +150,7 @@ func deleteCard(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}

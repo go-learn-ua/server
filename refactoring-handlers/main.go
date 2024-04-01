@@ -9,8 +9,8 @@ func main() {
 	http.HandleFunc("GET /cards", listCards)
 	http.HandleFunc("POST /cards", createCard)
 
-	http.HandleFunc("DELETE /cards/{id}", deleteCard)
 	http.HandleFunc("PUT /cards/{id}", updateCard)
+	http.HandleFunc("DELETE /cards/{id}", deleteCard)
 
 	server := &http.Server{
 		Addr: ":8080",
