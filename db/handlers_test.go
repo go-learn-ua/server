@@ -22,7 +22,7 @@ func Test_CardsGet(t *testing.T) {
 	}{
 		"success": {
 			countryCode: usCountryCode,
-			setupStorageMock: func(holder string) []creditCard {
+			setupStorageMock: func(holder string) ([]creditCard, error) {
 				return []creditCard{
 					{
 						ID:             2983,
@@ -31,10 +31,17 @@ func Test_CardsGet(t *testing.T) {
 						CvvCode:        123,
 						Holder:         "Іванко",
 					},
-				}
+				}, nil
 			},
 			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
 			expStatusCode: http.StatusOK,
+		},
+		"internal_server_error": {
+			countryCode: usCountryCode,
+			setupStorageMock: func(holder string) ([]creditCard, error) {
+				return nil, assert.AnError
+			},
+			expStatusCode: http.StatusInternalServerError,
 		},
 	}
 	for name, tc := range testCases {
@@ -102,7 +109,13 @@ func Test_CardsPost(t *testing.T) {
 			countryCode:      uaCountryCode,
 			expStatusCode:    http.StatusCreated,
 			requestBody:      io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
-			setupStorageMock: func(card creditCard) {},
+			setupStorageMock: func(card creditCard) error { return nil },
+		},
+		"internal_server_error": {
+			countryCode:      uaCountryCode,
+			expStatusCode:    http.StatusInternalServerError,
+			requestBody:      io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
+			setupStorageMock: func(card creditCard) error { return assert.AnError },
 		},
 	}
 
@@ -225,7 +238,13 @@ func Test_CardDelete(t *testing.T) {
 			countryCode:      uaCountryCode,
 			expStatusCode:    http.StatusNoContent,
 			cardID:           "12",
-			setupStorageMock: func(id int) {},
+			setupStorageMock: func(id int) error { return nil },
+		},
+		"internal_server_error": {
+			countryCode:      uaCountryCode,
+			expStatusCode:    http.StatusInternalServerError,
+			cardID:           "5",
+			setupStorageMock: func(id int) error { return assert.AnError },
 		},
 	}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
-type storageSaveCardFunc = func(card creditCard)
+type storageSaveCardFunc = func(card creditCard) error
 
 func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -39,18 +39,29 @@ func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
 			return
 		}
 
-		storageSaveCard(reqCard)
+		err = storageSaveCard(reqCard)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		w.WriteHeader(http.StatusCreated)
 	}
 }
 
-type storageListCardsFunc = func(holder string) []creditCard
+type storageListCardsFunc = func(holder string) ([]creditCard, error)
 
 func listCards(storageListCards storageListCardsFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		holder := r.URL.Query().Get("holder")
 
-		creditCards := storageListCards(holder)
+		creditCards, err := storageListCards(holder)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		resp, err := json.Marshal(creditCards)
 		if err != nil {
 			fmt.Println(err)
@@ -114,7 +125,7 @@ func updateCard(storageUpdateCard storageUpdateCardFunc) http.HandlerFunc {
 	}
 }
 
-type storageDeleteCardFunc func(id int)
+type storageDeleteCardFunc func(id int) error
 
 func deleteCard(storageDeleteCard storageDeleteCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +135,13 @@ func deleteCard(storageDeleteCard storageDeleteCardFunc) http.HandlerFunc {
 			return
 		}
 
-		storageDeleteCard(id)
+		err = storageDeleteCard(id)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
