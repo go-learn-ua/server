@@ -20,6 +20,10 @@ func Test_CardsGet(t *testing.T) {
 		expStatusCode int
 		queryParams   string
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"success": {
 			countryCode: usCountryCode,
 			setupStorageMock: func(holder string) []creditCard {
@@ -63,6 +67,10 @@ func Test_CardsPost(t *testing.T) {
 		expBody          string
 		expStatusCode    int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"empty_body": {
 			countryCode:   ukCountryCode,
 			expStatusCode: http.StatusBadRequest,
@@ -134,6 +142,11 @@ func Test_CardPut(t *testing.T) {
 		expBody       string
 		expStatusCode int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			cardID:        "2",
+			expStatusCode: http.StatusForbidden,
+		},
 		"incorrect_id_type": {
 			cardID:        "yura",
 			countryCode:   ukCountryCode,
@@ -216,6 +229,11 @@ func Test_CardDelete(t *testing.T) {
 		countryCode      string
 		expStatusCode    int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			cardID:        "12",
+			expStatusCode: http.StatusForbidden,
+		},
 		"invalid_path_param": {
 			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusNotFound,

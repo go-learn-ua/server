@@ -16,6 +16,7 @@ type storageSaveCardFunc = func(card creditCard)
 
 func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println(err)
@@ -67,7 +68,6 @@ type storageUpdateCardFunc = func(card creditCard) error
 
 func updateCard(storageUpdateCard storageUpdateCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("start")
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
