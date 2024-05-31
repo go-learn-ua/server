@@ -16,10 +16,6 @@ type storageSaveCardFunc = func(card creditCard)
 
 func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isCountryAllowed(r.Header) == false {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -53,11 +49,6 @@ type storageListCardsFunc = func(holder string) []creditCard
 
 func listCards(storageListCards storageListCardsFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isCountryAllowed(r.Header) == false {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		holder := r.URL.Query().Get("holder")
 
 		creditCards := storageListCards(holder)
@@ -77,12 +68,6 @@ type storageUpdateCardFunc = func(card creditCard) error
 
 func updateCard(storageUpdateCard storageUpdateCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("start")
-		if isCountryAllowed(r.Header) == false {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -133,11 +118,6 @@ type storageDeleteCardFunc func(id int)
 
 func deleteCard(storageDeleteCard storageDeleteCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if isCountryAllowed(r.Header) == false {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -158,19 +138,4 @@ func validate(card creditCard) error {
 			Match(regexp.MustCompile("^(0[1-9]|1[0-2])\\/[0-9]{2}$")).
 			Error("дата не коректна")),
 	)
-}
-
-const xCountryCodeHeaderKey = "X-Country-Code"
-const uaCountryCode = "UA"
-const usCountryCode = "US"
-const ukCountryCode = "UK"
-
-func isCountryAllowed(header http.Header) bool {
-	code := header.Get(xCountryCodeHeaderKey)
-
-	switch code {
-	case uaCountryCode, usCountryCode, ukCountryCode:
-		return true
-	}
-	return false
 }
