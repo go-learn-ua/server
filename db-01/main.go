@@ -3,10 +3,8 @@ package main
 import (
 	"database/sql"
 	"embed"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
@@ -16,25 +14,17 @@ import (
 var embedMigrations embed.FS
 
 func main() {
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	host := os.Getenv("POSTGRES_HOST")
-	port := os.Getenv("POSTGRES_PORT")
-	dbname := os.Getenv("POSTGRES_DB")
-
-	var err error
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
-	cardsStorage, err = sql.Open("postgres", connStr)
+	connStr := "postgres://postgres:mysecretpassword@localhost/postgres?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	defer cardsStorage.Close()
-
+	defer db.Close()
 	goose.SetBaseFS(embedMigrations)
 	if err := goose.SetDialect("postgres"); err != nil {
 		panic(err)
 	}
-	if err := goose.Up(cardsStorage, "migrations"); err != nil {
+	if err := goose.Up(db, "migrations"); err != nil {
 		panic(err)
 	}
 
