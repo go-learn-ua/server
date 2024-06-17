@@ -12,10 +12,11 @@ import (
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
-type storageSaveCardFunc = func(card creditCard) error
+type storageSaveCardFunc = func(card creditCard)
 
 func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Println(err)
@@ -39,29 +40,18 @@ func createCard(storageSaveCard storageSaveCardFunc) http.HandlerFunc {
 			return
 		}
 
-		err = storageSaveCard(reqCard)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
+		storageSaveCard(reqCard)
 		w.WriteHeader(http.StatusCreated)
 	}
 }
 
-type storageListCardsFunc = func(holder string) ([]creditCard, error)
+type storageListCardsFunc = func(holder string) []creditCard
 
 func listCards(storageListCards storageListCardsFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		holder := r.URL.Query().Get("holder")
 
-		creditCards, err := storageListCards(holder)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		creditCards := storageListCards(holder)
 		resp, err := json.Marshal(creditCards)
 		if err != nil {
 			fmt.Println(err)
@@ -78,7 +68,6 @@ type storageUpdateCardFunc = func(card creditCard) error
 
 func updateCard(storageUpdateCard storageUpdateCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("start")
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +114,7 @@ func updateCard(storageUpdateCard storageUpdateCardFunc) http.HandlerFunc {
 	}
 }
 
-type storageDeleteCardFunc func(id int) error
+type storageDeleteCardFunc func(id int)
 
 func deleteCard(storageDeleteCard storageDeleteCardFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -135,13 +124,7 @@ func deleteCard(storageDeleteCard storageDeleteCardFunc) http.HandlerFunc {
 			return
 		}
 
-		err = storageDeleteCard(id)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
+		storageDeleteCard(id)
 		w.WriteHeader(http.StatusNoContent)
 	}
 }

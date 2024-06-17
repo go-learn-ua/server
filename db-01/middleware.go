@@ -2,14 +2,14 @@ package main
 
 import "net/http"
 
-func isCountryAllowedMiddleware(handler http.HandlerFunc) http.HandlerFunc {
+func isCountryAllowedMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if isCountryAllowed(r.Header) == false {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 
-		handler.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	}
 }
 

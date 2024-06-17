@@ -1,4 +1,4 @@
-module db
+module db-01
 
 go 1.22
 

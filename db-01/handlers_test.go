@@ -20,9 +20,13 @@ func Test_CardsGet(t *testing.T) {
 		expStatusCode int
 		queryParams   string
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"success": {
 			countryCode: usCountryCode,
-			setupStorageMock: func(holder string) ([]creditCard, error) {
+			setupStorageMock: func(holder string) []creditCard {
 				return []creditCard{
 					{
 						ID:             2983,
@@ -31,17 +35,10 @@ func Test_CardsGet(t *testing.T) {
 						CvvCode:        123,
 						Holder:         "Іванко",
 					},
-				}, nil
+				}
 			},
 			expResp:       `[{"id":2983,"number":"4263982640269299","expiration_date":"21 січня 2023р","cvv":123,"holder":"Іванко"}]`,
 			expStatusCode: http.StatusOK,
-		},
-		"internal_server_error": {
-			countryCode: usCountryCode,
-			setupStorageMock: func(holder string) ([]creditCard, error) {
-				return nil, assert.AnError
-			},
-			expStatusCode: http.StatusInternalServerError,
 		},
 	}
 	for name, tc := range testCases {
@@ -70,6 +67,10 @@ func Test_CardsPost(t *testing.T) {
 		expBody          string
 		expStatusCode    int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			expStatusCode: http.StatusForbidden,
+		},
 		"empty_body": {
 			countryCode:   ukCountryCode,
 			expStatusCode: http.StatusBadRequest,
@@ -109,13 +110,7 @@ func Test_CardsPost(t *testing.T) {
 			countryCode:      uaCountryCode,
 			expStatusCode:    http.StatusCreated,
 			requestBody:      io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
-			setupStorageMock: func(card creditCard) error { return nil },
-		},
-		"internal_server_error": {
-			countryCode:      uaCountryCode,
-			expStatusCode:    http.StatusInternalServerError,
-			requestBody:      io.NopCloser(strings.NewReader(`{"number":"4263982640269299","expiration_date":"12/43","cvv":123,"holder":"Іванко"}`)),
-			setupStorageMock: func(card creditCard) error { return assert.AnError },
+			setupStorageMock: func(card creditCard) {},
 		},
 	}
 
@@ -147,6 +142,11 @@ func Test_CardPut(t *testing.T) {
 		expBody       string
 		expStatusCode int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			cardID:        "2",
+			expStatusCode: http.StatusForbidden,
+		},
 		"incorrect_id_type": {
 			cardID:        "yura",
 			countryCode:   ukCountryCode,
@@ -229,6 +229,11 @@ func Test_CardDelete(t *testing.T) {
 		countryCode      string
 		expStatusCode    int
 	}{
+		"not_allowed_country_code": {
+			countryCode:   "RU",
+			cardID:        "12",
+			expStatusCode: http.StatusForbidden,
+		},
 		"invalid_path_param": {
 			countryCode:   uaCountryCode,
 			expStatusCode: http.StatusNotFound,
@@ -238,13 +243,7 @@ func Test_CardDelete(t *testing.T) {
 			countryCode:      uaCountryCode,
 			expStatusCode:    http.StatusNoContent,
 			cardID:           "12",
-			setupStorageMock: func(id int) error { return nil },
-		},
-		"internal_server_error": {
-			countryCode:      uaCountryCode,
-			expStatusCode:    http.StatusInternalServerError,
-			cardID:           "5",
-			setupStorageMock: func(id int) error { return assert.AnError },
+			setupStorageMock: func(id int) {},
 		},
 	}
 
