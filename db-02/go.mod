@@ -5,8 +5,8 @@ go 1.22
 require (
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/lib/pq v1.10.9
-	github.com/pressly/goose/v3 v3.20.0
-	github.com/stretchr/testify v1.8.4
+	github.com/pressly/goose/v3 v3.21.1
+	github.com/stretchr/testify v1.9.0
 )
 
 require (

@@ -63,6 +63,7 @@ func listCards(storageListCards storageListCardsFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		resp, err := json.Marshal(creditCards)
 		if err != nil {
 			fmt.Println(err)

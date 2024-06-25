@@ -14,7 +14,7 @@ import (
 var embedMigrations embed.FS
 
 func main() {
-	connStr := "postgres://postgres:mysecretpassword@localhost/postgres?sslmode=disable"
+	connStr := "postgres://postgres:mysecretpassword@localhost:5432/postgres?sslmode=disable"
 
 	var err error
 	cardsStorage, err = sql.Open("postgres", connStr)
@@ -22,10 +22,13 @@ func main() {
 		panic(err)
 	}
 	defer cardsStorage.Close()
+
 	goose.SetBaseFS(embedMigrations)
+
 	if err := goose.SetDialect("postgres"); err != nil {
 		panic(err)
 	}
+
 	if err := goose.Up(cardsStorage, "migrations"); err != nil {
 		panic(err)
 	}
